@@ -3,3 +3,5 @@ myenv
 model/
 *.pt
 datasets/
+__pycache__/
+*.py[cod]
