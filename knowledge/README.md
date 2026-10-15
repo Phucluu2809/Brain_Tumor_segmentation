@@ -78,18 +78,20 @@ kiến trúc đề xuất trong các nghiên cứu tiếp theo.
 
 | Số hiệu | Tên hình | Vị trí gợi ý trong Word |
 |---|---|---|
+| Hình 1.1 | Bốn chuỗi xung MRI và ground truth của một ca BraTS | Mục 1.1.1 |
 | Hình 2.1 | Luồng xử lý end-to-end sáu giai đoạn | Mục 2.1 |
 | Hình 2.2 | Cơ chế chuyển nhãn BraTS thành WT, TC và ET | Mục 2.2 |
 | Hình 2.3 | Sơ đồ U-Net 2D và skip connection | Mục 2.3.1 |
 | Hình 2.4 | Transformer decoder coarse-to-fine với query học được | Mục 2.3.2 |
-| Hình 3.1 | Kiến trúc tổng thể DAU-Mamba | Mục 3.2 |
-| Hình 3.2 | Khối Direction-Adaptive Split Hybrid | Mục 3.3 |
-| Hình 3.3 | Khối Uncertainty-Guided Skip Fusion | Mục 3.4 |
+| Hình 3.1 | Từ thể tích 3D đến selective scan đa hướng | Mục 3.1.4 |
+| Hình 3.2 | Kiến trúc tổng thể DAU-Mamba | Mục 3.2 |
+| Hình 3.3 | Khối Direction-Adaptive Split Hybrid | Mục 3.3 |
+| Hình 3.4 | Khối Uncertainty-Guided Skip Fusion | Mục 3.4 |
 | Hình 4.1 | Đường cong huấn luyện U-Net và TransUNet | Mục 4.2 |
-| Hình 4.2 | Kết quả định tính trên ca BraTS2021_00495 | Mục 4.3 |
+| Hình 4.2 | So sánh định tính hai mô hình trên cùng ca test 00088 | Mục 4.3 |
 
-> Hình 3.2 và Hình 3.3 có thể được cắt từ hai ô phóng to ở nửa dưới Hình 3.1 khi
-> dàn trang Word.
+> Toàn bộ hình đã được lưu riêng trong `knowledge/assets`. Script tái tạo hình
+> nằm tại `knowledge/scripts/generate_report_figures.py`.
 
 ---
 
@@ -212,6 +214,13 @@ phần của u; vì vậy BraTS cung cấp bốn modality bổ trợ nhau.
 Mỗi modality có phân bố cường độ khác nhau. Mô hình nhận cả bốn kênh để học mối
 liên hệ giữa biểu hiện của cùng một tổn thương trên nhiều chuỗi xung.
 
+![Hình 1.1. Bốn chuỗi MRI và ground truth](assets/brats2021_00495_modalities.png)
+
+**Hình 1.1.** Cùng một lát axial của ca `BraTS2021_00495` trên T1, T1ce, T2,
+FLAIR và ground truth. Màu xanh biểu diễn vùng phù, vàng biểu diễn vùng
+hoại tử/không tăng cường và đỏ biểu diễn vùng tăng cường. Nguồn: dữ liệu và
+script trực quan hóa của nhóm.
+
 ### 1.1.2. Thách thức về hình thái và ranh giới u
 
 Khối u não không phải một đối tượng có hình dạng cố định. Những khó khăn chính
@@ -329,9 +338,9 @@ phân theo giao thức đánh giá của BraTS.
 
 Quan hệ hình học mong muốn là:
 
-\[
+$$
 ET\subseteq TC\subseteq WT.
-\]
+$$
 
 ### 1.3.3. Phạm vi nghiên cứu
 
@@ -362,8 +371,10 @@ Hệ thống được tổ chức thành sáu giai đoạn liên tiếp:
 (6) Ràng buộc vùng lồng nhau, threshold và trực quan hóa
 ```
 
-**Hình 2.1.** Luồng xử lý end-to-end sáu giai đoạn. Khi dựng Word, mỗi giai
-đoạn nên được biểu diễn bằng một khối màu và mũi tên một chiều.
+![Hình 2.1. Pipeline sáu giai đoạn](assets/pipeline_6_stage.png)
+
+**Hình 2.1.** Luồng xử lý end-to-end sáu giai đoạn. Hình được nhóm dựng bằng
+code từ pipeline thực tế của hai kho mã nguồn.
 
 **Bảng 2.1. Sáu giai đoạn của pipeline**
 
@@ -410,12 +421,17 @@ bounding box này. Tọa độ crop, kích thước gốc và affine được l�
 MRI không có thang cường độ tuyệt đối thống nhất giữa bệnh nhân. Với từng
 modality, z-score chỉ được tính trên vùng khác nền:
 
-\[
+$$
 x' = \frac{x-\mu_{brain}}{\sigma_{brain}+\epsilon}.
-\]
+$$
 
 Voxel nền được giữ ở 0. Cách này tránh để vùng nền lớn ảnh hưởng trung bình và
 độ lệch chuẩn.
+
+![Hình 2.2. Ánh xạ nhãn BraTS](assets/brats_label_regions.png)
+
+**Hình 2.2.** Chuyển nhãn BraTS `{0,1,2,4}` thành ba vùng đánh giá lồng nhau.
+Hình được nhóm dựng từ hàm `seg_to_regions` trong mã nguồn.
 
 ### 2.2.4. Lấy mẫu có ưu tiên foreground
 
@@ -449,6 +465,11 @@ U-Net [1] gồm encoder, bottleneck, decoder và skip connection. Encoder giảm
 phân giải để mở rộng receptive field; decoder tăng độ phân giải; skip connection
 chuyển chi tiết không gian từ encoder sang decoder.
 
+![Hình 2.3. Kiến trúc U-Net 2D](assets/unet2d_architecture.png)
+
+**Hình 2.3.** U-Net 2D của dự án với năm mức kênh, bốn skip connection và đầu
+ra ba mask sigmoid. Hình được sinh bằng code dựa trên cấu hình `unet2d.yaml`.
+
 Mô hình trong dự án sử dụng năm mức kênh:
 
 ```text
@@ -463,9 +484,9 @@ lồng nhau thay vì loại trừ nhau.
 
 Hàm mất mát U-Net:
 
-\[
+$$
 \mathcal{L}_{UNet}=\mathcal{L}_{BCE}+1-DSC_{soft}.
-\]
+$$
 
 U-Net 2D có khoảng **5,686 triệu tham số**.
 
@@ -481,6 +502,12 @@ Ba tầng decoder hoạt động coarse-to-fine:
 2. mask trung gian tạo attention mask cho tầng tiếp theo;
 3. query tiếp tục cross-attend lên tỷ lệ `1/4` rồi `1/2`;
 4. mỗi query dự đoán một trong bốn lớp `WT`, `TC`, `ET`, `no-object` và một mask.
+
+![Hình 2.4. TransUNet decoder-only](assets/transunet_decoder_architecture.png)
+
+**Hình 2.4.** Luồng coarse-to-fine của Transformer decoder: 20 query lần lượt
+nhận đặc trưng U-Net ở ba tỷ lệ và xuất class cùng query mask. Hình được sinh từ
+cấu hình và mã `transformer_decoder.py` của dự án.
 
 Cấu hình chính:
 
@@ -501,11 +528,11 @@ TransUNet 2D có khoảng **8,568 triệu tham số**.
 Ground truth của một ảnh là danh sách các region không rỗng, tối đa ba đối
 tượng. Hungarian matching ghép một-một các query với ground truth theo chi phí:
 
-\[
+$$
 \mathcal{C}=2\mathcal{C}_{class}
 +5\mathcal{C}_{BCE-mask}
 +5\mathcal{C}_{Dice-mask}.
-\]
+$$
 
 Query không được ghép học lớp `no-object`, với trọng số 0,1. Loss được tính cho
 đầu ra cuối và các đầu ra trung gian. Do U-Net và TransUNet dùng hai hàm mất mát
@@ -555,11 +582,11 @@ lớn hơn VRAM nhưng làm tăng số lần forward.
 Gaussian blending gán trọng số lớn ở tâm và nhỏ ở biên, sau đó tính trung bình
 có trọng số:
 
-\[
+$$
 P(v)=\frac{\sum_k w_k(v)P_k(v)}{\sum_k w_k(v)+\epsilon}.
-\]
+$$
 
-Trong đó \(P_k(v)\) là xác suất của cửa sổ thứ \(k\), còn \(w_k(v)\) là trọng
+Trong đó $P_k(v)$ là xác suất của cửa sổ thứ $k$, còn $w_k(v)$ là trọng
 số Gaussian. Cơ chế này thuộc nhánh suy luận 3D, không được sử dụng để tạo bảng
 kết quả 2D hiện tại.
 
@@ -569,15 +596,15 @@ kết quả 2D hiện tại.
 
 Trước khi threshold, pipeline áp đặt quan hệ xác suất:
 
-\[
+$$
 p_{TC}\leftarrow\max(p_{TC},p_{ET}),
-\]
+$$
 
-\[
+$$
 p_{WT}\leftarrow\max(p_{WT},p_{TC}).
-\]
+$$
 
-Khi đó \(p_{WT}\ge p_{TC}\ge p_{ET}\) tại mọi voxel. Cách này giữ lại ET khi
+Khi đó $p_{WT}\ge p_{TC}\ge p_{ET}$ tại mọi voxel. Cách này giữ lại ET khi
 mô hình chắc chắn về ET nhưng còn lưỡng lự về TC.
 
 ### 2.5.2. Threshold và chuyển về nhãn BraTS
@@ -616,7 +643,7 @@ Giao diện dùng cùng preprocessing, model definition và hậu xử lý với
 Tích chập có receptive field cục bộ. Receptive field có thể mở rộng qua nhiều
 tầng, nhưng quan hệ giữa hai vùng xa vẫn phải truyền qua chuỗi phép biến đổi.
 Self-attention cho phép mọi token tương tác trực tiếp nhưng cần ma trận chú ý
-`N × N`; độ phức tạp thời gian và bộ nhớ xấp xỉ \(O(N^2)\). Với thể tích 3D,
+`N × N`; độ phức tạp thời gian và bộ nhớ xấp xỉ $O(N^2)$. Với thể tích 3D,
 số token tăng rất nhanh và attention đầy đủ khó triển khai trên GPU ít VRAM.
 UNETR [2] là một ví dụ sử dụng Transformer encoder để học ngữ cảnh toàn cục cho
 phân đoạn ảnh y khoa 3D.
@@ -625,22 +652,22 @@ phân đoạn ảnh y khoa 3D.
 
 Một hệ trạng thái liên tục tuyến tính:
 
-\[
+$$
 h'(t)=Ah(t)+Bx(t),
-\]
+$$
 
-\[
+$$
 y(t)=Ch(t)+Dx(t),
-\]
+$$
 
-trong đó \(x\) là đầu vào, \(h\) là trạng thái ẩn và \(y\) là đầu ra. Sau khi
-rời rạc hóa với bước \(\Delta\):
+trong đó $x$ là đầu vào, $h$ là trạng thái ẩn và $y$ là đầu ra. Sau khi
+rời rạc hóa với bước $\Delta$:
 
-\[
+$$
 h_t=\bar{A}h_{t-1}+\bar{B}x_t,
 \qquad
 y_t=Ch_t+Dx_t.
-\]
+$$
 
 SSM nén lịch sử chuỗi vào trạng thái ẩn và có thể xử lý tuần tự với chi phí
 tuyến tính theo chiều dài chuỗi.
@@ -652,12 +679,12 @@ quyết định nội dung cần ghi nhớ, truyền tiếp hoặc loại bỏ t
 toán selective scan được thiết kế để thực thi hiệu quả trên phần cứng và tránh
 ma trận attention bậc hai.
 
-Nếu feature map 3D được trải thành chuỗi \(N=HWD\) token:
+Nếu feature map 3D được trải thành chuỗi $N=HWD$ token:
 
 | Cơ chế | Độ phức tạp theo số token | Nhận xét |
 |---|---:|---|
-| Self-attention | \(O(N^2)\) | Khó mở rộng khi `H×W×D` lớn |
-| Selective scan | \(O(N)\) | Phù hợp chuỗi voxel dài hơn |
+| Self-attention | $O(N^2)$ | Khó mở rộng khi `H×W×D` lớn |
+| Selective scan | $O(N)$ | Phù hợp chuỗi voxel dài hơn |
 
 ### 3.1.4. Vấn đề hướng quét trong dữ liệu 3D
 
@@ -670,11 +697,17 @@ mô hình có thể thiên lệch theo thứ tự đó. DAU-Mamba sử dụng ba
 
 Các hướng có tham số riêng và được hợp nhất theo trọng số phụ thuộc từng mẫu.
 
+![Hình 3.1. Selective scan đa hướng](assets/ssm_mamba_flow.png)
+
+**Hình 3.1.** Feature 3D được tuyến tính hóa và quét theo ba hướng trước khi
+hợp nhất thích nghi. Hình được nhóm dựng từ cơ sở SSM/Mamba [4] và đặc tả
+DAU-Mamba.
+
 ## 3.2. Kiến trúc đề xuất DAU-Mamba
 
-![Hình 3.1. Kiến trúc DAU-Mamba](assets/dau_mamba_architecture.png)
+![Hình 3.2. Kiến trúc DAU-Mamba](assets/dau_mamba_architecture.png)
 
-**Hình 3.1. Kiến trúc tổng thể DAU-Mamba.** Hình được dựng mới từ đặc tả nội bộ
+**Hình 3.2. Kiến trúc tổng thể DAU-Mamba.** Hình được dựng mới từ đặc tả nội bộ
 `DAU_Mamba_Kien_truc.md`. Đây là hình mô tả thiết kế, không phải kiến trúc đã
 được huấn luyện trong bảng kết quả Chương 4.
 
@@ -708,32 +741,38 @@ DAU-Mamba áp dụng ba nguyên tắc:
 
 ## 3.3. Khối lai chia nhánh thích nghi hướng
 
+![Hình 3.3. Khối DSH](assets/dsh_block.png)
+
+**Hình 3.3.** Khối DSH chia đặc trưng thành nhánh Local 3D CNN và nhánh Mamba
+đa hướng, sau đó hợp nhất, channel shuffle và cộng residual. Hình được cắt từ
+sơ đồ tổng thể do nhóm xây dựng.
+
 ### 3.3.1. Chia nhánh cục bộ và toàn cục
 
-Cho tensor \(F\), mô hình chiếu và chia kênh theo tỷ lệ 1:1:
+Cho tensor $F$, mô hình chiếu và chia kênh theo tỷ lệ 1:1:
 
-\[
+$$
 F_l,F_g=Split(Proj(F)).
-\]
+$$
 
 Nhánh cục bộ:
 
-\[
+$$
 L=Conv_{3D}(F_l),
-\]
+$$
 
-nhằm học texture, cạnh và cấu trúc lân cận. Nhánh toàn cục đưa \(F_g\) qua các
+nhằm học texture, cạnh và cấu trúc lân cận. Nhánh toàn cục đưa $F_g$ qua các
 selective scan.
 
 ### 3.3.2. Ba hướng Mamba
 
-\[
+$$
 M_f=Mamba_f(F_g),
 \quad
 M_r=Mamba_r(F_g),
 \quad
 M_s=Mamba_s(F_g).
-\]
+$$
 
 `Forward` và `Reverse` giảm thiên lệch theo thứ tự, còn `Inter-slice` nhấn mạnh
 tính liên tục theo trục lát cắt.
@@ -743,16 +782,16 @@ tính liên tục theo trục lát cắt.
 Một vector mô tả toàn cục được tạo bằng global average pooling. MLP và softmax
 sinh ba trọng số:
 
-\[
+$$
 [\alpha_f,\alpha_r,\alpha_s]
 =Softmax(MLP(GAP(F_g))),
-\]
+$$
 
-với \(\alpha_f+\alpha_r+\alpha_s=1\). Đặc trưng toàn cục:
+với $\alpha_f+\alpha_r+\alpha_s=1$. Đặc trưng toàn cục:
 
-\[
+$$
 G=\alpha_fM_f+\alpha_rM_r+\alpha_sM_s.
-\]
+$$
 
 Trọng số được học theo từng bệnh nhân thay vì cố định. Một khối u lan mạnh theo
 trục z có thể ưu tiên inter-slice, trong khi u tập trung trên ít lát có thể ưu
@@ -760,39 +799,45 @@ tiên hướng nội lát.
 
 ### 3.3.4. Hợp nhất và residual
 
-\[
+$$
 F_{out}=F+Proj(ChannelShuffle([L;G])).
-\]
+$$
 
 Channel shuffle tạo trao đổi thông tin giữa hai nhóm kênh; residual giúp ổn định
 gradient và cho phép khối học phần hiệu chỉnh thay vì biến đổi toàn bộ feature.
 
 ## 3.4. Hợp nhất skip connection dựa trên độ bất định
 
+![Hình 3.4. Khối UGSF](assets/ugsf_block.png)
+
+**Hình 3.4.** UGSF sử dụng encoder skip, decoder feature và entropy map để sinh
+voxel gate, từ đó tạo đặc trưng hợp nhất. Hình được cắt từ sơ đồ tổng thể do
+nhóm xây dựng.
+
 ### 3.4.1. Tín hiệu entropy
 
-Tại mỗi mức decoder, một đầu dự đoán phụ tạo xác suất \(p\). Entropy nhị phân:
+Tại mỗi mức decoder, một đầu dự đoán phụ tạo xác suất $p$. Entropy nhị phân:
 
-\[
+$$
 U=-p\log(p+\epsilon)-(1-p)\log(1-p+\epsilon).
-\]
+$$
 
-Entropy thấp khi xác suất gần 0 hoặc 1, cao khi xác suất gần 0,5. Vì thế, \(U\)
+Entropy thấp khi xác suất gần 0 hoặc 1, cao khi xác suất gần 0,5. Vì thế, $U$
 đóng vai trò bản đồ vùng chưa chắc chắn.
 
 ### 3.4.2. Voxel gate
 
-Cho feature encoder \(E\), feature decoder \(V\) và entropy \(U\):
+Cho feature encoder $E$, feature decoder $V$ và entropy $U$:
 
-\[
+$$
 G=\sigma(Conv([E;V;U])).
-\]
+$$
 
 Kết quả hợp nhất:
 
-\[
+$$
 F_{fuse}=G\odot E+(1-G)\odot V.
-\]
+$$
 
 Gate có giá trị theo voxel và kênh. Ở vùng cần chi tiết biên, mô hình có thể ưu
 tiên encoder; ở vùng cần ngữ cảnh, mô hình có thể ưu tiên decoder.
@@ -801,14 +846,14 @@ tiên encoder; ở vùng cần ngữ cảnh, mô hình có thể ưu tiên decod
 
 Các auxiliary head được nội suy về kích thước ground truth và đưa vào loss:
 
-\[
+$$
 \mathcal{L}_{total}
 =\mathcal{L}_{final}
 +\sum_{i=1}^{4}\lambda_i\mathcal{L}_{aux}^{(i)}.
-\]
+$$
 
 Deep supervision cung cấp gradient trực tiếp cho các mức decoder, đồng thời tạo
-entropy phục vụ UGSF. Trọng số \(\lambda_i\) cần được chọn trên validation.
+entropy phục vụ UGSF. Trọng số $\lambda_i$ cần được chọn trên validation.
 
 ## 3.5. Nguồn ý tưởng và điểm mới dự kiến
 
@@ -909,21 +954,21 @@ bằng kết quả `nvidia-smi` của lần chạy đó.
 
 ### 4.1.3. Dice Similarity Coefficient
 
-Với mask dự đoán \(P\) và ground truth \(G\):
+Với mask dự đoán $P$ và ground truth $G$:
 
-\[
+$$
 DSC(P,G)=\frac{2|P\cap G|+\epsilon}{|P|+|G|+\epsilon}.
-\]
+$$
 
 Dice nằm trong `[0,1]`, càng cao càng tốt. Báo cáo tính Dice riêng cho WT, TC,
 ET và trung bình ba vùng.
 
 ### 4.1.4. Hausdorff Distance 95%
 
-\[
+$$
 HD95(P,G)=\max\{Q_{0.95}(d(\partial P,\partial G)),
 Q_{0.95}(d(\partial G,\partial P))\}.
-\]
+$$
 
 HD95 càng thấp càng tốt. Phân vị 95% giảm độ nhạy với một số ít điểm ngoại lai
 so với Hausdorff cực đại.
@@ -936,7 +981,7 @@ nằm trong split 200 của hai run chính; kết quả của ca này chỉ minh
 
 ## 4.2. Tiến trình huấn luyện
 
-![Hình 4.1. Đường cong huấn luyện](../../HK7-CV-Class/brats-transunet/figures/training_curves.png)
+![Hình 4.1. Đường cong huấn luyện](assets/training_curves.png)
 
 **Hình 4.1.** Đường cong loss và Dice validation từ `log.csv`. Loss của hai mô
 hình khác định nghĩa nên chỉ so sánh xu hướng trong cùng một mô hình.
@@ -984,9 +1029,16 @@ biên sai lệch lớn. Điều này không thể hiện đầy đủ nếu ch�
 
 ### 4.3.3. Kết quả định tính
 
-![Hình 4.2. Kết quả ca BraTS2021_00495](../../HK7-CV-Class/brats-transunet/figures/BraTS2021_00495.png)
+![Hình 4.2. So sánh định tính U-Net và TransUNet](assets/brats2021_00088_model_comparison.png)
 
-**Hình 4.2.** Bốn modality, ground truth và kết quả dự đoán trên ca minh họa.
+**Hình 4.2.** So sánh U-Net 2D và TransUNet 2D trên cùng lát cắt của ca test
+`BraTS2021_00088`. Mỗi hàng gồm bốn modality, ground truth và dự đoán; nhờ đó
+có thể quan sát trực tiếp khác biệt ở biên WT, TC và ET. Nguồn: kết quả đánh giá
+từ checkpoint `best.pt` của hai run chính.
+
+Ngoài ca test trên, pipeline demo còn được kiểm tra end-to-end với ca
+`BraTS2021_00495`. Ca này không thuộc split 200 nên chỉ dùng để minh họa giao
+diện và kiểm tra tính nhất quán của pipeline.
 
 **Bảng 4.6. Dice trên ca demo BraTS2021_00495**
 
@@ -1390,12 +1442,17 @@ Quy ước sử dụng số liệu:
    mục ba cấp để Word tự tạo mục lục.
 2. Đánh số hình theo chương: Hình 2.1, Hình 3.1, Hình 4.1.
 3. Đặt tên bảng phía trên bảng và tên hình phía dưới hình.
-4. Dùng Equation của Word cho các công thức LaTeX trong báo cáo.
+4. Công thức trong README dùng `$...$` cho inline và `$$...$$` cho display để
+   hiển thị đúng trên Markdown hỗ trợ MathJax/KaTeX. Khi đưa vào Word, nhấn
+   `Alt` + `=` rồi dán phần nội dung nằm giữa hai dấu `$$`; chọn chế độ nhập
+   LaTeX nếu Word chưa tự nhận dạng.
 5. Đặt trích dẫn dạng `[1]`, `[2]` theo danh mục tài liệu tham khảo.
-6. Với Hình 3.1, chèn file `knowledge/assets/dau_mamba_architecture.png`; có thể
-   cắt riêng hai khối DSH và UGSF để tạo Hình 3.2 và Hình 3.3.
-7. Không đưa con số latency suy luận vào bản nộp cho đến khi có log benchmark.
-8. Giữ phần tuyên bố phạm vi: sản phẩm phục vụ nghiên cứu và giảng dạy, không
+6. Với kiến trúc đề xuất, dùng `dau_mamba_architecture.png` cho Hình 3.2,
+   `dsh_block.png` cho Hình 3.3 và `ugsf_block.png` cho Hình 3.4.
+7. Các hình kỹ thuật có thể sinh lại bằng lệnh
+   `.\myenv\Scripts\python.exe knowledge\scripts\generate_report_figures.py`.
+8. Không đưa con số latency suy luận vào bản nộp cho đến khi có log benchmark.
+9. Giữ phần tuyên bố phạm vi: sản phẩm phục vụ nghiên cứu và giảng dạy, không
    thay thế chẩn đoán y khoa.
 
 ---
